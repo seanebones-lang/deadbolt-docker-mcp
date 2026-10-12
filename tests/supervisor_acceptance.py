@@ -180,6 +180,9 @@ def verify(image, operator_image):
             call(client, True)
             passed('live_heartbeat_keeps_default_60_second_lease_live')
             run('docker', 'stop', '--time', '10', beat)
+            stopped = json.loads(run('docker', 'inspect', beat))[0]['State']
+            assert not stopped['Running'] and stopped['ExitCode'] == 0
+            passed('docker_stop_closes_heartbeat_gracefully')
             expiry = status(agent)['expires_at']
             # Keep calling after stopping renewal: the workload cannot maintain
             # its own lease. No operator-forced timestamp edits are involved.

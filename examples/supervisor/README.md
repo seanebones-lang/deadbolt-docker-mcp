@@ -96,6 +96,8 @@ Keep it attached to the trusted job lifecycle. Do not leave an unconditional
 detached renewal daemon running. Stop protected dispatch when this helper fails;
 arrange executor cancellation separately for already-running work. Ending a
 heartbeat stops future renewal, but the remaining idle window still applies.
+The wrapper handles Docker's stop signal and closes the helper thread; the
+acceptance driver checks a successful graceful exit rather than forced SIGKILL.
 Operator `kill` blocks new admissions immediately. Neither heartbeat nor kill
 terminates an already-running tool or extends the fixed deadline.
 

@@ -1,6 +1,7 @@
 """Trusted operator container only. No tokens in argv, Docker env or output."""
 import json
 import os
+import signal
 import stat
 import sys
 
@@ -30,6 +31,11 @@ def main():
         os.execv("/usr/local/bin/deadbolt", ["deadbolt", *args])
     elif mode == "heartbeat":
         from deadbolt_supervisor import heartbeat_cli
+        # Python is PID 1 in this container. Handle Docker's normal stop signal
+        # so the helper closes its thread instead of waiting for forced SIGKILL.
+        def stop_heartbeat(_signal, _frame):
+            raise KeyboardInterrupt
+        signal.signal(signal.SIGTERM, stop_heartbeat)
         sys.argv = ["deadbolt-supervisor-heartbeat", *args]
         return heartbeat_cli()
     elif mode == "status" and len(args) == 1:
