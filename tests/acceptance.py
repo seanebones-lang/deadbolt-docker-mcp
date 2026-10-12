@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,7 @@ class Client:
                                      stderr=subprocess.PIPE, text=True, bufsize=1)
         self.lines = queue.Queue()
         self.diagnostics = []
+        self.notifications = []
         self.sequence = 0
         def read():
             for line in self.proc.stdout:
@@ -46,12 +48,24 @@ class Client:
         self.proc.stdin.write(json.dumps({'jsonrpc':'2.0','id':self.sequence,
                                          'method':method,'params':params or {}})+'\n')
         self.proc.stdin.flush()
-        try:
-            line = self.lines.get(timeout=30)
-        except queue.Empty:
-            raise AssertionError('No MCP response: '+ '\n'.join(self.diagnostics))
-        assert line is not None, 'MCP process exited: '+ '\n'.join(self.diagnostics)
-        response = json.loads(line)
+        deadline = time.monotonic() + 30
+        for _ in range(256):
+            try:
+                line = self.lines.get(timeout=max(0.001, deadline-time.monotonic()))
+            except queue.Empty:
+                raise AssertionError('No MCP response: '+ '\n'.join(self.diagnostics))
+            assert line is not None, 'MCP process exited: '+ '\n'.join(self.diagnostics)
+            response = json.loads(line)
+            assert response.get('jsonrpc') == '2.0', response
+            if 'id' not in response and isinstance(response.get('method'), str):
+                # Gateways may notify about tool-list changes or logging before
+                # replying. Keep only names, and preserve the request deadline.
+                self.notifications.append(response['method'])
+                del self.notifications[:-100]
+                continue
+            break
+        else:
+            raise AssertionError('Too many MCP notifications before the response')
         assert response['id'] == self.sequence, response
         if method == 'initialize' and 'result' in response:
             self.proc.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n')
@@ -59,7 +73,8 @@ class Client:
         return response
 
     def close(self):
-        self.proc.stdin.close()
+        try: self.proc.stdin.close()
+        except BrokenPipeError: pass
         try:
             self.proc.wait(timeout=15)
         except subprocess.TimeoutExpired:

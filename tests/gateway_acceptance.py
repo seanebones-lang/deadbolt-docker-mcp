@@ -45,6 +45,7 @@ def verify(catalog=None, cli=None):
                 'catalog':str(catalog),'tools':[t['name'] for t in tools],
                 'engine_target':data['target'],'checksum_matches':data['checksum_matches'],
                 'active_protection':False,'scope':'Official Docker MCP Gateway with explicit local test catalog and empty configs/secrets; no model session',
+                'notification_methods':sorted(set(client.notifications)),
                 'global_catalogs_or_profiles_changed':False}
 
 
