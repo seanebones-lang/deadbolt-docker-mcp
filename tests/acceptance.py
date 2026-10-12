@@ -92,7 +92,7 @@ def verify(image):
     assert not info['Config'].get('ExposedPorts') and not info['Config'].get('Volumes')
     assert info['Config']['Entrypoint']==['node','/opt/deadbolt/server/entry.cjs']
     engine_version=run('docker','run','--rm','--network','none','--read-only','--entrypoint','/usr/local/bin/deadbolt',image,'--version').strip()
-    assert engine_version=='deadbolt 2.0.0-rc.2'
+    assert engine_version=='deadbolt 2.0.0'
     passed('nonroot_stdio_image_with_no_declared_ports_or_host_mounts')
     base = ['docker','run','--rm','-i','--network','none','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges',
@@ -141,7 +141,7 @@ def verify(image):
                     assert data['route']==route and data['steps']
                 data=client.rpc('tools/call',{'name':'deadbolt_check_bundle','arguments':{}})['result']['structuredContent']
                 assert data['checksum_matches'] and data['active_protection'] is False
-                assert data['engine_version']=='2.0.0-rc.2' and data['bundle_version']=='2.0.0-rc.2'
+                assert data['engine_version']=='2.0.0' and data['bundle_version']=='2.0.0'
                 assert 'error' in client.rpc('tools/call',{'name':'kill','arguments':{}})
                 assert not list(state.iterdir())
                 client.close();passed('read_only_networkless_setup_'+label)
@@ -216,10 +216,12 @@ def verify(image):
             assert 'result' in client.rpc('initialize')
             call('echo',False,'purpose_exceeded')
             call('echo',False,'purpose_exceeded',{'url':'https://foreign.example/'})
+            call('echo',False,'bad_request',{'url':'https://allowed.example/','host':'foreign.example'})
             call('echo',True,arguments={'url':'https://allowed.example/'})
             client.close();passed('all_routed_tools_require_allowed_destination_without_exception')
             config['offline_tools']=['echo'];save_config();client=launch('/operator/config.json',True)
             assert 'result' in client.rpc('initialize')
+            call('echo',False,'bad_request',{'url':'https://allowed.example/','host':'foreign.example'})
             call('echo',True);call('echo',False,'purpose_exceeded',{'url':'https://foreign.example/'})
             client.close();passed('offline_exception_does_not_override_declared_foreign_destination')
             config.update(agent='container-supervised-run',renewal_mode='supervisor')
@@ -247,6 +249,12 @@ def verify(image):
             operator_sql('DROP TABLE leases')
             call('echo',False,'store_unavailable');client.close()
             passed('running_store_outage_is_readable_denial_without_effect')
+            before=(state/'starts.txt').read_text(); before_effects=effects.read_text()
+            client=launch('/operator/config.json',True);client.proc.wait(timeout=30)
+            assert client.proc.returncode!=0 and (state/'starts.txt').read_text()==before
+            assert effects.read_text()==before_effects
+            assert not operator_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='leases'")
+            client.close();passed('damaged_store_restart_refused_without_repair_or_downstream_effect')
         finally:
             for client in clients:
                 if client.proc.poll() is None: client.close()

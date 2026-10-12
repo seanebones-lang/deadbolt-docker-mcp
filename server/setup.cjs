@@ -21,7 +21,7 @@ const definitions = [
     name: 'deadbolt_check_bundle',
     description: 'Read the bundled engine and provenance metadata, calculate its SHA-256 and report compatibility and packaging integrity for this host. Reads only this installed bundle; does not execute the engine, inspect operator state or test security. Available only when operator configuration is blank.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-    outputSchema: object({ bundle_version: string('Installed launcher bundle version.'), engine_version: string('Pinned preview engine version.'), target: string('Native target for this host, or unsupported.'), checksum_matches: { type: 'boolean', description: 'Whether the bundled executable matches its packaged SHA-256 metadata. This is corruption detection, not independent signature verification.' }, active_protection: { type: 'boolean', const: false, description: 'Always false in setup mode; no downstream server is configured.' }, boundary: string('Protection scope and setup-mode limitation.') }),
+    outputSchema: object({ bundle_version: string('Installed launcher bundle version.'), engine_version: string('Pinned engine version.'), target: string('Native target for this host, or unsupported.'), checksum_matches: { type: 'boolean', description: 'Whether the bundled executable matches its packaged SHA-256 metadata. This is corruption detection, not independent signature verification.' }, active_protection: { type: 'boolean', const: false, description: 'Always false in setup mode; no downstream server is configured.' }, boundary: string('Protection scope and setup-mode limitation.') }),
     annotations,
   },
 ];
