@@ -160,15 +160,15 @@ and downstream process. Run the sidecar/heartbeat on the trusted operator side
 against the same private state. It needs its own explicitly configured private
 socket/credential mount; the networkless setup entry does not create that
 connection. Follow the [pinned supervisor guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0/docs/SUPERVISION.md)
-and use the RC2 Python client/finite heartbeat helper. Start renewal before the
+and use the stable 2.0.0 Python client/finite heartbeat helper. Start renewal before the
 idle TTL lapses. For simply trying the container, use the finite activity-mode
 example above.
 
 The separate [container supervisor reference](examples/supervisor/README.md)
-uses the published RC2 Python helper, a private Linux socket and operator-only
+uses the published stable Python helper, a private Linux socket and operator-only
 credential mounts. Its runnable lifecycle checks real heartbeat extension,
 busy-workload idle expiry, failed late renewal and the fixed deadline. It is
-additional example/test source, not a replacement for the frozen RC2 MCP image.
+part of this stable source-build route; it provisions operator supervision separately.
 
 ## Reproduce the effect checks
 
@@ -181,9 +181,10 @@ python3 tests/acceptance.py n11-deadbolt-docker:local
 The suite builds a disposable downstream image, creates private temporary config
 and state, and tests actual marker effects. It checks setup, invalid config,
 allow/deny, one-shot approval/replay, pause/resume, clip, idle expiry and
-terminal kill with reconnect. RC2 adds destination/exception behavior, old or
+terminal kill with reconnect. It also checks destination/exception behavior, old or
 changed configuration refusal, supervisor-mode non-renewal, a real wall-clock
-fixed deadline, and a running store outage. Denials must be MCP tool-error
+fixed deadline, conflicting recognized destinations, a running store outage, and
+refused startup against a damaged existing store without recreating authority. Denials must be MCP tool-error
 results with the expected reason code and retry hint, and must have no marker
 effect. Idle expiry is operator-forced; the fixed deadline is observed in real
 time. The suite does not test a live supervisor heartbeat or a model session. It removes its derived image and private fixture afterward.
