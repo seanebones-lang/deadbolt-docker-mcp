@@ -140,6 +140,16 @@ allow/deny, one-shot approval/replay, pause/resume, clip, expiry and terminal ki
 with reconnect. It removes its derived image and private fixture afterward.
 No account, network connection, paid provider or model session is used.
 
+With Docker Desktop's MCP Toolkit installed, also run:
+
+```sh
+python3 tests/gateway_acceptance.py
+```
+
+This uses an explicit disposable catalog and empty config/secrets files. It does
+not import/reset your catalog or change client connections. CI repeats the
+gateway check using the checksum-pinned official Docker MCP Gateway v0.42.0.
+
 The test's `acceptance-report.json` records the actual image ID and architecture.
 This is container/protocol acceptance, not independent certification or proof of
 model behavior in every client.

@@ -20,9 +20,15 @@ jobs:
           python-version: '3.12'
       - run: docker build --progress plain -t n11-deadbolt-docker:local .
       - run: python tests/acceptance.py n11-deadbolt-docker:local
+      - run: python tests/install_gateway_cli.py "$RUNNER_TEMP/docker-mcp"
+      - run: python tests/gateway_acceptance.py --cli "$RUNNER_TEMP/docker-mcp"
+        env:
+          DOCKER_MCP_IN_CONTAINER: '1'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: container-${{ matrix.os }}
-          path: acceptance-report.json
+          path: |
+            acceptance-report.json
+            gateway-report.json
           if-no-files-found: warn

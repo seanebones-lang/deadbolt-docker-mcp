@@ -25,19 +25,37 @@ class Client:
         self.proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE, text=True, bufsize=1)
         self.lines = queue.Queue()
+        self.diagnostics = []
         self.sequence = 0
         def read():
             for line in self.proc.stdout:
                 self.lines.put(line)
+            self.lines.put(None)
         threading.Thread(target=read, daemon=True).start()
+        def diagnostics():
+            for line in self.proc.stderr:
+                self.diagnostics.append(line.rstrip())
+                del self.diagnostics[:-100]
+        threading.Thread(target=diagnostics, daemon=True).start()
 
     def rpc(self, method, params=None):
+        if method == 'initialize' and params is None:
+            params = {'protocolVersion':'2025-03-26','capabilities':{},
+                      'clientInfo':{'name':'n11-disposable-container-test','version':'1.0.0'}}
         self.sequence += 1
         self.proc.stdin.write(json.dumps({'jsonrpc':'2.0','id':self.sequence,
                                          'method':method,'params':params or {}})+'\n')
         self.proc.stdin.flush()
-        response = json.loads(self.lines.get(timeout=30))
+        try:
+            line = self.lines.get(timeout=30)
+        except queue.Empty:
+            raise AssertionError('No MCP response: '+ '\n'.join(self.diagnostics))
+        assert line is not None, 'MCP process exited: '+ '\n'.join(self.diagnostics)
+        response = json.loads(line)
         assert response['id'] == self.sequence, response
+        if method == 'initialize' and 'result' in response:
+            self.proc.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n')
+            self.proc.stdin.flush()
         return response
 
     def close(self):
