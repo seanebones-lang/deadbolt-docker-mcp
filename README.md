@@ -8,11 +8,18 @@ operator configuration and a trusted downstream server, the same container gates
 that server's routed `tools/call` requests. It does not protect other MCP servers
 in your gateway, client built-in tools, or processes outside this container.
 
-This Docker package is **1.0.0**, built from stable **DeadBolt engine 1.0.3** at
-`3a857f8438dcda4bdaadb414d37f128508dc44f1`. It is separate from MCPB 1.1.0 and
-the engine 1.1.0-rc.1 preview. The stable engine's irreversible-tool permission
-is a broad one-shot grant; exact-action preview behavior is not included here.
+This Docker package is the **2.0.0-rc.2 developer preview**, built from the
+exact DeadBolt engine **2.0.0-rc.2** source at
+`d166c7b039800bbd6d8acb1bc5c66f9add472f5f`. The earlier Docker package 1.0.0
+remains available from its source revision
+`e5efc1595bc87683ccf96bc367448012a9e170ee`, with engine 1.0.3. This preview
+requires version 2 operator configuration and a fresh run identity; it does not
+silently migrate an existing idle-only run.
 
+The container launcher supports broad one-shot irreversible-tool approval. It
+strips inherited `DEADBOLT_*` variables before starting the gate and does not
+provision exact-action grants. Use the separate Rust/Python or raw-proxy
+integration when your executor requires exact-action grants.
 Docker MCP Catalog inclusion requires Docker's review. The source and local
 installation are available independently of catalog acceptance.
 
@@ -24,6 +31,7 @@ the image/build stages; you do not install them on your host.
 ```sh
 git clone https://github.com/seanebones-lang/deadbolt-docker-mcp.git
 cd deadbolt-docker-mcp
+git checkout v2.0.0-rc.2
 docker build -t n11-deadbolt-docker:local .
 ```
 
@@ -76,7 +84,10 @@ folder, create `config.json` and replace every policy choice deliberately:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
+  "hard_deadline_at": 0,
+  "renewal_mode": "activity",
+  "offline_tools": [],
   "agent": "replace-with-a-fresh-run-id",
   "database": "/state/deadbolt.db",
   "events": "/state/events.jsonl",
@@ -88,6 +99,12 @@ folder, create `config.json` and replace every policy choice deliberately:
   "spend_cap_usd": 10
 }
 ```
+
+**Replace `hard_deadline_at: 0` before launch.** It is an invalid placeholder,
+not an unlimited lifetime. Calculate a future integer Unix timestamp for your
+chosen run length, for example `python3 -c 'import time; print(int(time.time()) + 3600)'`
+for a one-hour maximum. A fixed timestamp stays fixed across restarts; do not
+regenerate it for the same run ID.
 
 Paths in the JSON refer to the container filesystem. Launch your derived image
 with those two exact folders mounted, using your operator UID/GID:
@@ -122,9 +139,30 @@ docker run --rm --read-only --network none --user "$(id -u):$(id -g)" \
 ```
 
 Use `resume`, `approve --agent ID --tool TOOL`, `clip TOOL --agent ID`, or
-`kill --agent ID` only as a deliberate local operator action. The stable engine
-has a 60-second sliding lease; silence expires it. Use a fresh ID for each run,
-never share it across concurrent sessions, and never reuse a killed identity.
+`kill --agent ID` only as a deliberate local operator action. Activity mode has a 60-second idle TTL; live admission renews it only within
+the fixed deadline. Silence expires the run. Supervisor mode requires a trusted
+operator to provision and run renewal separately; admissions never renew it.
+Neither mode moves the hard deadline. A late heartbeat, restart, resume or
+policy change cannot revive an expired/killed run. Use a fresh ID for each run.
+
+Configured mode installs the supplied destination allow-list, including an
+empty one. Every routed tool must declare an allowed destination unless the
+operator explicitly lists that tool in `offline_tools`. With both lists empty,
+no routed tool call is admitted. For reviewed, local-only dummy tools, explicitly
+list their actual names in `offline_tools`; for network-capable tools, supply
+allowed destination tokens and require a destination in the call. Exceptions default to empty and cannot override an explicitly
+foreign destination. These declarations do not prevent a tool from making
+unreported connections; use OS/container egress restrictions for enforcement.
+Never classify a general-purpose shell as offline unless you accept that trust.
+
+For a supervised container, keep the renewal credential out of its environment
+and downstream process. Run the sidecar/heartbeat on the trusted operator side
+against the same private state. It needs its own explicitly configured private
+socket/credential mount; the networkless setup entry does not create that
+connection. Follow the [pinned supervisor guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0-rc.2/docs/SUPERVISION.md)
+and use the RC2 Python client/finite heartbeat helper. Start renewal before the
+idle TTL lapses. For simply trying the container, use the finite activity-mode
+example above.
 
 ## Reproduce the effect checks
 
@@ -136,8 +174,13 @@ python3 tests/acceptance.py n11-deadbolt-docker:local
 
 The suite builds a disposable downstream image, creates private temporary config
 and state, and tests actual marker effects. It checks setup, invalid config,
-allow/deny, one-shot approval/replay, pause/resume, clip, expiry and terminal kill
-with reconnect. It removes its derived image and private fixture afterward.
+allow/deny, one-shot approval/replay, pause/resume, clip, idle expiry and
+terminal kill with reconnect. RC2 adds destination/exception behavior, old or
+changed configuration refusal, supervisor-mode non-renewal, a real wall-clock
+fixed deadline, and a running store outage. Denials must be MCP tool-error
+results with the expected reason code and retry hint, and must have no marker
+effect. Idle expiry is operator-forced; the fixed deadline is observed in real
+time. The suite does not test a live supervisor heartbeat or a model session. It removes its derived image and private fixture afterward.
 No account, network connection, paid provider or model session is used.
 
 With Docker Desktop's MCP Toolkit installed, also run:
@@ -187,5 +230,5 @@ installation problems. Send private security concerns to
 **nextelevenstudios@gmail.com**; do not put secrets or private messages in issues.
 
 [Captioned walkthrough](https://www.nexteleven.dev/deadbolt#watch) ·
-[Engine source and trust guide](https://github.com/seanebones-lang/deadbolt/blob/v1.0.3/docs/TRUST.md) ·
+[Engine source and trust guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0-rc.2/docs/TRUST.md) ·
 [Other installation routes](https://www.nexteleven.dev/deadbolt#install)

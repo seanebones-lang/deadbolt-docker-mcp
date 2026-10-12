@@ -12,7 +12,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   };
   else if (r.method === 'tools/list') result = { tools: ['echo', 'write_marker', 'off_list'].map(name => ({
     name, description: 'Disposable marker tool; no accounts or network',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    inputSchema: { type: 'object', properties: {url:{type:'string'}}, additionalProperties: false },
   })) };
   else if (r.method === 'tools/call') {
     fs.appendFileSync('/state/effects.txt', r.params.name + '\n');

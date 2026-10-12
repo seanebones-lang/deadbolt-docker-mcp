@@ -1,15 +1,15 @@
 {
-  "engine_version": "1.0.3",
-  "engine_revision": "3a857f8438dcda4bdaadb414d37f128508dc44f1",
-  "engine_archive_url": "https://codeload.github.com/seanebones-lang/deadbolt/tar.gz/3a857f8438dcda4bdaadb414d37f128508dc44f1",
-  "engine_archive_sha256": "b886dd2436fb022cdbda9d1bee3c352ea627aed06230e8daa849174f834bb67a",
+  "engine_version": "2.0.0-rc.2",
+  "engine_revision": "d166c7b039800bbd6d8acb1bc5c66f9add472f5f",
+  "engine_archive_url": "https://codeload.github.com/seanebones-lang/deadbolt/tar.gz/d166c7b039800bbd6d8acb1bc5c66f9add472f5f",
+  "engine_archive_sha256": "bbfe4f285a9dfe1489cc8c3dbac51425e5cc13c7a2d2886ce4891dfa02841e9f",
   "wrapper_origin": {
     "release": {
-      "url": "https://github.com/seanebones-lang/deadbolt/releases/download/mcpb-v1.1.0/deadbolt-1.1.0.mcpb",
-      "sha256": "7840d23f116b8a162322a372124718ca374296e3b9ca1d781e99f466d7a6634c",
-      "bundle_version": "1.1.0",
-      "engine_version": "1.0.3",
-      "note": "Wrapper origin only: this Docker package adapts the released launcher/setup files and builds the engine from the pinned source archive above. It does not embed the unchanged MCPB archive."
+      "url": "https://github.com/seanebones-lang/deadbolt/releases/download/mcpb-v2.0.0-rc.2/deadbolt-2.0.0-rc.2.mcpb",
+      "sha256": "a0634e69da89c6e2c38bf72b8c1a1b8ed75e30e77df218841692808998c7b95e",
+      "bundle_version": "2.0.0-rc.2",
+      "engine_version": "2.0.0-rc.2",
+      "note": "Wrapper origin only: the container adapts the published RC2 launcher/setup and builds the exact RC2 engine source. It does not embed unchanged prebuilt MCPB executables."
     },
     "changes": [
       "Linux ARM64 target mapping",

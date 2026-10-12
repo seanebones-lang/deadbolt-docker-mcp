@@ -1,10 +1,8 @@
 """Real container/tool effects; private disposable mounts, no accounts or model."""
-from contextlib import closing
 import json
 import os
 from pathlib import Path
 import queue
-import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -86,12 +84,15 @@ class Client:
 
 def verify(image):
     checks = []
+    effect_calls = []
     def passed(name):
         checks.append({'case':name,'passed':True})
     info = json.loads(run('docker','image','inspect',image))[0]
     assert info['Config']['User']=='10001:10001'
     assert not info['Config'].get('ExposedPorts') and not info['Config'].get('Volumes')
     assert info['Config']['Entrypoint']==['node','/opt/deadbolt/server/entry.cjs']
+    engine_version=run('docker','run','--rm','--network','none','--read-only','--entrypoint','/usr/local/bin/deadbolt',image,'--version').strip()
+    assert engine_version=='deadbolt 2.0.0-rc.2'
     passed('nonroot_stdio_image_with_no_declared_ports_or_host_mounts')
     base = ['docker','run','--rm','-i','--network','none','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges',
@@ -107,7 +108,7 @@ def verify(image):
         run('docker','build','-q','-t',fixture_image,str(work))
         state=work/'state';state.mkdir(mode=0o700)
         operator=work/'operator';operator.mkdir(mode=0o700)
-        config={'version':1,'agent':'container-disposable-run','database':'/state/deadbolt.db',
+        config={'version':2,'hard_deadline_at':int(time.time())+1200,'renewal_mode':'activity','offline_tools':['echo','write_marker'],'agent':'container-disposable-run','database':'/state/deadbolt.db',
                 'events':'/state/events.jsonl','command':'/usr/local/bin/node',
                 'args':['/opt/downstream/fixture.cjs'],'tools':['echo','write_marker'],
                 'destinations':[],'irreversible_tools':['write_marker'],'spend_cap_usd':10}
@@ -124,6 +125,11 @@ def verify(image):
             return run(*(base+mount+['-e','DEADBOLT_DB=/state/deadbolt.db',
                          '-e','DEADBOLT_EVENTS=/state/events.jsonl',
                          '--entrypoint','/usr/local/bin/deadbolt',image,*args]))
+        def operator_sql(query, parameters=()):
+            # Run SQLite on the Linux engine side of Docker Desktop's mount.
+            # Host-side SQLite uses a different kernel/locking/cache boundary.
+            script='const {DatabaseSync}=require("node:sqlite"); const db=new DatabaseSync("/state/deadbolt.db"); const rows=db.prepare(process.argv[1]).all(...JSON.parse(process.argv[2])); db.close(); console.log(JSON.stringify(rows));'
+            return json.loads(run(*(base+mount+['--entrypoint','node',image,'-e',script,query,json.dumps(parameters)])))
         try:
             for label,value in [('absent',None),('blank','')]:
                 client=launch(value)
@@ -135,7 +141,7 @@ def verify(image):
                     assert data['route']==route and data['steps']
                 data=client.rpc('tools/call',{'name':'deadbolt_check_bundle','arguments':{}})['result']['structuredContent']
                 assert data['checksum_matches'] and data['active_protection'] is False
-                assert data['engine_version']=='1.0.3'
+                assert data['engine_version']=='2.0.0-rc.2' and data['bundle_version']=='2.0.0-rc.2'
                 assert 'error' in client.rpc('tools/call',{'name':'kill','arguments':{}})
                 assert not list(state.iterdir())
                 client.close();passed('read_only_networkless_setup_'+label)
@@ -148,39 +154,106 @@ def verify(image):
             tools=client.rpc('tools/list')['result']['tools']
             assert not any(t['name'].startswith('deadbolt_') for t in tools)
             passed('configured_container_discovers_only_trusted_downstream_tools')
+            live_starts=(state/'starts.txt').read_text()
+            for mutation in ({'hard_deadline_at':config['hard_deadline_at']+60},{'renewal_mode':'supervisor'}):
+                (operator/'config.json').write_text(json.dumps({**config,**mutation}))
+                rejected=launch('/operator/config.json',True);rejected.proc.wait(timeout=30)
+                assert rejected.proc.returncode!=0 and (state/'starts.txt').read_text()==live_starts
+                rejected.close()
+            (operator/'config.json').write_text(json.dumps(config))
+            passed('live_existing_run_deadline_and_renewal_mode_cannot_be_changed_on_restart')
             effects=state/'effects.txt'
-            def call(name,allowed):
+            def call(name,allowed,deny=None,arguments=None):
                 before=effects.read_text() if effects.exists() else ''
-                response=client.rpc('tools/call',{'name':name,'arguments':{}})
+                response=client.rpc('tools/call',{'name':name,'arguments':arguments or {}})
                 after=effects.read_text() if effects.exists() else ''
-                if allowed: assert 'result' in response and after==before+name+'\n'
-                else: assert after==before and ('error' in response or response.get('result',{}).get('isError'))
+                if allowed: assert 'result' in response and after==before+name+'\n', {'response':response,'before':before,'after':after}
+                else:
+                    assert after==before and 'error' not in response and response['result']['isError'] is True, response
+                    meta=response['result']['_meta']['io.github.seanebones-lang/deadbolt']
+                    assert meta['code']==deny, response
+                    assert response['result']['content'][0]['text'].startswith('DeadBolt denied: '+deny+'.'), response
+                    retry=('never' if deny in ('killed','lease_expired','deadline_exceeded') else 'after_operator_resume' if deny=='paused' else 'after_service_recovery' if deny=='store_unavailable' else 'after_operator_intervention')
+                    assert meta['retry']==retry, response
+                effect_calls.append({'tool':name,'allowed':allowed,'body_ran':before!=after,'deny':deny})
             call('echo',True);passed('allowed_call_has_real_marker_effect')
-            call('off_list',False);passed('off_policy_call_has_no_effect')
-            call('write_marker',False);passed('irreversible_action_needs_local_operator_grant')
+            call('off_list',False,'purpose_exceeded');passed('off_policy_call_has_no_effect')
+            call('write_marker',False,'needs_human');passed('irreversible_action_needs_local_operator_grant')
             operator_command('approve','--agent',config['agent'],'--tool','write_marker')
-            call('write_marker',True);call('write_marker',False);passed('one_grant_one_effect_replay_refused')
-            operator_command('pause','--agent',config['agent']);call('echo',False);passed('pause_blocks_next_effect')
+            call('write_marker',True);call('write_marker',False,'needs_human');passed('one_grant_one_effect_replay_refused')
+            operator_command('pause','--agent',config['agent']);call('echo',False,'paused');passed('pause_blocks_next_effect')
             operator_command('resume','--agent',config['agent']);call('echo',True);passed('resume_restores_allowed_effect')
-            operator_command('clip','echo','--agent',config['agent']);call('echo',False);passed('clip_blocks_selected_effect')
+            operator_command('clip','echo','--agent',config['agent']);call('echo',False,'purpose_exceeded');passed('clip_blocks_selected_effect')
             operator_command('resume','--agent',config['agent'])
-            with closing(sqlite3.connect(state/'deadbolt.db')) as db:
-                db.execute('UPDATE leases SET expires_at=0 WHERE agent_id=?',(config['agent'],));db.commit()
-            call('echo',False);passed('expired_lease_blocks_effect')
-            operator_command('kill','--agent',config['agent']);call('echo',False);passed('terminal_kill_blocks_effect')
+            operator_sql('UPDATE leases SET expires_at=0 WHERE agent_id=?',(config['agent'],))
+            call('echo',False,'lease_expired');passed('expired_lease_blocks_effect')
+            operator_command('kill','--agent',config['agent']);call('echo',False,'killed');passed('terminal_kill_blocks_effect')
             client.close()
             before=(state/'starts.txt').read_text()
             client=launch('/operator/config.json',True);client.proc.wait(timeout=30)
             assert client.proc.returncode!=0 and (state/'starts.txt').read_text()==before
             client.close();assert (state/'deadbolt.db').exists()
             passed('reconnect_retains_state_and_does_not_revive_killed_identity')
+
+            def save_config():
+                (operator/'config.json').write_text(json.dumps(config))
+            for mutation in ({'version':1},{'offline_tools':['off_list']},{'hard_deadline_at':0},
+                             {'renewal_mode':'anything'},{'hard_deadline_at':config['hard_deadline_at']+60},
+                             {'renewal_mode':'supervisor'}):
+                (operator/'config.json').write_text(json.dumps({**config,**mutation}))
+                client=launch('/operator/config.json',True);client.proc.wait(timeout=30)
+                assert client.proc.returncode!=0 and (state/'starts.txt').read_text()==before
+                client.close()
+            passed('legacy_invalid_and_existing_bound_changes_refused_before_downstream_start')
+            config.update(agent='container-empty-destination-run',destinations=[],offline_tools=[])
+            save_config();client=launch('/operator/config.json',True)
+            assert 'result' in client.rpc('initialize')
+            call('echo',False,'purpose_exceeded')
+            call('echo',False,'purpose_exceeded',{'url':'https://allowed.example/'})
+            client.close();passed('empty_explicit_destination_and_exception_lists_admit_no_effects')
+            config.update(agent='container-destination-run',destinations=['allowed.example'],offline_tools=[])
+            save_config();client=launch('/operator/config.json',True)
+            assert 'result' in client.rpc('initialize')
+            call('echo',False,'purpose_exceeded')
+            call('echo',False,'purpose_exceeded',{'url':'https://foreign.example/'})
+            call('echo',True,arguments={'url':'https://allowed.example/'})
+            client.close();passed('all_routed_tools_require_allowed_destination_without_exception')
+            config['offline_tools']=['echo'];save_config();client=launch('/operator/config.json',True)
+            assert 'result' in client.rpc('initialize')
+            call('echo',True);call('echo',False,'purpose_exceeded',{'url':'https://foreign.example/'})
+            client.close();passed('offline_exception_does_not_override_declared_foreign_destination')
+            config.update(agent='container-supervised-run',renewal_mode='supervisor')
+            save_config();client=launch('/operator/config.json',True)
+            assert 'result' in client.rpc('initialize')
+            expires=operator_sql('SELECT expires_at FROM leases WHERE agent_id=?',(config['agent'],))[0]['expires_at']
+            call('echo',True)
+            assert operator_sql('SELECT expires_at FROM leases WHERE agent_id=?',(config['agent'],))[0]['expires_at']==expires
+            operator_sql('UPDATE leases SET expires_at=0 WHERE agent_id=?',(config['agent'],))
+            call('echo',False,'lease_expired');client.close()
+            before=(state/'starts.txt').read_text();client=launch('/operator/config.json',True);client.proc.wait(timeout=30)
+            assert client.proc.returncode!=0 and (state/'starts.txt').read_text()==before
+            client.close();passed('supervised_calls_do_not_renew_and_expired_restart_refused')
+            config.update(agent='container-deadline-run',renewal_mode='activity',hard_deadline_at=int(time.time())+20)
+            save_config();client=launch('/operator/config.json',True)
+            assert 'result' in client.rpc('initialize');call('echo',True)
+            while time.time()<config['hard_deadline_at']+.1: time.sleep(.1)
+            call('echo',False,'deadline_exceeded');client.close()
+            before=(state/'starts.txt').read_text();client=launch('/operator/config.json',True);client.proc.wait(timeout=30)
+            assert client.proc.returncode!=0 and (state/'starts.txt').read_text()==before
+            client.close();passed('real_fixed_deadline_blocks_effect_and_restart_never_extends_it')
+            config.update(agent='container-outage-run',hard_deadline_at=int(time.time())+600)
+            save_config();client=launch('/operator/config.json',True)
+            assert 'result' in client.rpc('initialize');call('echo',True)
+            operator_sql('DROP TABLE leases')
+            call('echo',False,'store_unavailable');client.close()
+            passed('running_store_outage_is_readable_denial_without_effect')
         finally:
             for client in clients:
                 if client.proc.poll() is None: client.close()
             run('docker','image','rm',fixture_image)
-    return {'passed':True,'image':image,'image_id':info['Id'],'container_architecture':info['Architecture'],
+    return {'passed':True,'image':image,'image_id':info['Id'],'container_architecture':info['Architecture'],'engine_version':engine_version,'source_revision':json.loads((ROOT/'SOURCE.json').read_text())['engine_revision'],
             'scope':'Real stdio containers and disposable effects; no accounts, network, or model-mediated invocation',
-            'checks':checks,'temporary_fixture_image_and_private_mounts_removed':True}
+            'checks':checks,'effect_calls':effect_calls,'operator_forced_idle_expiry':True,'real_wall_clock_deadline':True,'temporary_fixture_image_and_private_mounts_removed':True}
 
 
 if __name__=='__main__':

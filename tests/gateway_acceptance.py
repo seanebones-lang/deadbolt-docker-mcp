@@ -36,6 +36,7 @@ def verify(catalog=None, cli=None):
             assert not check.get('isError')
             data=check.get('structuredContent') or json.loads(check['content'][0]['text'])
             assert data['checksum_matches'] and data['active_protection'] is False
+            assert data['engine_version']=='2.0.0-rc.2' and data['bundle_version']=='2.0.0-rc.2'
             guide=client.rpc('tools/call',{'name':'deadbolt_get_integration_guide','arguments':{'route':'stdio_client'}})['result']
             assert not guide.get('isError')
             assert 'error' in client.rpc('tools/call',{'name':'kill','arguments':{}})
@@ -43,7 +44,7 @@ def verify(catalog=None, cli=None):
             client.close()
         return {'passed':True,'gateway_version':run(*prefix,'version').strip(),
                 'catalog':str(catalog),'tools':[t['name'] for t in tools],
-                'engine_target':data['target'],'checksum_matches':data['checksum_matches'],
+                'engine_version':data['engine_version'],'engine_target':data['target'],'checksum_matches':data['checksum_matches'],
                 'active_protection':False,'scope':'Official Docker MCP Gateway with explicit local test catalog and empty configs/secrets; no model session',
                 'notification_methods':sorted(set(client.notifications)),
                 'global_catalogs_or_profiles_changed':False}
