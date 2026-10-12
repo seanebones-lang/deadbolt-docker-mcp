@@ -1,23 +1,21 @@
-# A trusted supervisor for the RC2 container
+# A trusted supervisor for the stable 2.0.0 container
 
 Use this reference when the trusted job's continued participation, rather than
 calls from its workload, should keep a run live. It uses the published
-`2.0.0rc2` Python heartbeat helper and the exact RC2 engine already built in the
+`2.0.0` Python heartbeat helper and the exact stable 2.0.0 engine already built in the
 main image. Both the wheel checksum and official Python base-image digest are
 pinned. Build-time downloads are public; runtime connects no external service.
 
 This is a separate operator image, not an MCP server or downstream image. It
-does not modify the frozen `v2.0.0-rc.2` MCP container. The reference and its tests
-are added on the Docker repository's subsequent source revision.
+shares the stable engine with the MCP container while keeping operator
+credentials and renewal outside the downstream server.
 
 ## Reproduce the disposable lifecycle
 
 From this repository, after building `n11-deadbolt-docker:local`:
 
-Use a source revision containing `examples/supervisor` (current `main` after this
-addition). The earlier frozen `v2.0.0-rc.2` source tag has the same engine/container
-but does not include this later reference. Record `git rev-parse HEAD` alongside
-the report when reproducing it.
+The stable source includes the supervisor reference. Record `git rev-parse HEAD`
+alongside the report when reproducing it; earlier tags remain immutable.
 
 ```sh
 docker build --build-arg DEADBOLT_IMAGE=n11-deadbolt-docker:local \
@@ -105,5 +103,5 @@ The downstream remains trusted: it shares writable gate state under the same
 user in this reference. Missing credential mounts do not make same-user state
 tamper-proof. Use an isolated executor/OS boundary when the workload itself is
 untrusted. No actual accounts, remote jobs or provider usage reconciliation are
-covered here. See the pinned [supervision contract](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0-rc.2/docs/SUPERVISION.md)
-and [trust limits](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0-rc.2/docs/TRUST.md).
+covered here. See the pinned [supervision contract](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0/docs/SUPERVISION.md)
+and [trust limits](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0/docs/TRUST.md).

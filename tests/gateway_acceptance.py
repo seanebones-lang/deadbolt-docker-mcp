@@ -36,7 +36,7 @@ def verify(catalog=None, cli=None):
             assert not check.get('isError')
             data=check.get('structuredContent') or json.loads(check['content'][0]['text'])
             assert data['checksum_matches'] and data['active_protection'] is False
-            assert data['engine_version']=='2.0.0-rc.2' and data['bundle_version']=='2.0.0-rc.2'
+            assert data['engine_version']=='2.0.0' and data['bundle_version']=='2.0.0'
             guide=client.rpc('tools/call',{'name':'deadbolt_get_integration_guide','arguments':{'route':'stdio_client'}})['result']
             assert not guide.get('isError')
             assert 'error' in client.rpc('tools/call',{'name':'kill','arguments':{}})
