@@ -20,6 +20,8 @@ jobs:
           python-version: '3.12'
       - run: docker build --progress plain -t n11-deadbolt-docker:local .
       - run: python tests/acceptance.py n11-deadbolt-docker:local
+      - run: docker build --build-arg DEADBOLT_IMAGE=n11-deadbolt-docker:local -t n11-deadbolt-operator:local examples/supervisor
+      - run: python tests/supervisor_acceptance.py n11-deadbolt-docker:local n11-deadbolt-operator:local
       - run: python tests/install_gateway_cli.py "$RUNNER_TEMP/docker-mcp"
       - run: python tests/gateway_acceptance.py --cli "$RUNNER_TEMP/docker-mcp"
         env:
@@ -30,5 +32,6 @@ jobs:
           name: container-${{ matrix.os }}
           path: |
             acceptance-report.json
+            supervisor-report.json
             gateway-report.json
           if-no-files-found: warn

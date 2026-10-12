@@ -164,6 +164,12 @@ and use the RC2 Python client/finite heartbeat helper. Start renewal before the
 idle TTL lapses. For simply trying the container, use the finite activity-mode
 example above.
 
+The separate [container supervisor reference](examples/supervisor/README.md)
+uses the published RC2 Python helper, a private Linux socket and operator-only
+credential mounts. Its runnable lifecycle checks real heartbeat extension,
+busy-workload idle expiry, failed late renewal and the fixed deadline. It is
+additional example/test source, not a replacement for the frozen RC2 MCP image.
+
 ## Reproduce the effect checks
 
 With Python 3.11+ and the image built:
