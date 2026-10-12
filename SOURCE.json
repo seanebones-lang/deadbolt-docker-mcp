@@ -9,7 +9,7 @@
       "sha256": "7840d23f116b8a162322a372124718ca374296e3b9ca1d781e99f466d7a6634c",
       "bundle_version": "1.1.0",
       "engine_version": "1.0.3",
-      "note": "bundle/ contains the exact released files. Plugin wrapper and metadata are separate."
+      "note": "Wrapper origin only: this Docker package adapts the released launcher/setup files and builds the engine from the pinned source archive above. It does not embed the unchanged MCPB archive."
     },
     "changes": [
       "Linux ARM64 target mapping",
