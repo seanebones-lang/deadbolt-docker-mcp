@@ -1,0 +1,23 @@
+{
+  "engine_version": "1.0.3",
+  "engine_revision": "3a857f8438dcda4bdaadb414d37f128508dc44f1",
+  "engine_archive_url": "https://codeload.github.com/seanebones-lang/deadbolt/tar.gz/3a857f8438dcda4bdaadb414d37f128508dc44f1",
+  "engine_archive_sha256": "b886dd2436fb022cdbda9d1bee3c352ea627aed06230e8daa849174f834bb67a",
+  "wrapper_origin": {
+    "release": {
+      "url": "https://github.com/seanebones-lang/deadbolt/releases/download/mcpb-v1.1.0/deadbolt-1.1.0.mcpb",
+      "sha256": "7840d23f116b8a162322a372124718ca374296e3b9ca1d781e99f466d7a6634c",
+      "bundle_version": "1.1.0",
+      "engine_version": "1.0.3",
+      "note": "bundle/ contains the exact released files. Plugin wrapper and metadata are separate."
+    },
+    "changes": [
+      "Linux ARM64 target mapping",
+      "container-specific entry, display titles and stdio guide"
+    ]
+  },
+  "base_images": {
+    "build": "rust:1.85-bookworm@sha256:e51d0265072d2d9d5d320f6a44dde6b9ef13653b035098febd68cce8fa7c0bc4",
+    "runtime": "node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"
+  }
+}

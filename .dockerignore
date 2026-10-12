@@ -1,0 +1,11 @@
+*
+!Dockerfile
+!server/**
+!build/**
+!manifest.json
+!SOURCE.json
+!LICENSE
+!NOTICE
+!THIRD-PARTY.md
+!THIRD-PARTY-NOTICES.txt
+!third-party/**
