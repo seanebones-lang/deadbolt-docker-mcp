@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,23 +26,55 @@ class Client:
         self.proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE, text=True, bufsize=1)
         self.lines = queue.Queue()
+        self.diagnostics = []
+        self.notifications = []
         self.sequence = 0
         def read():
             for line in self.proc.stdout:
                 self.lines.put(line)
+            self.lines.put(None)
         threading.Thread(target=read, daemon=True).start()
+        def diagnostics():
+            for line in self.proc.stderr:
+                self.diagnostics.append(line.rstrip())
+                del self.diagnostics[:-100]
+        threading.Thread(target=diagnostics, daemon=True).start()
 
     def rpc(self, method, params=None):
+        if method == 'initialize' and params is None:
+            params = {'protocolVersion':'2025-03-26','capabilities':{},
+                      'clientInfo':{'name':'n11-disposable-container-test','version':'1.0.0'}}
         self.sequence += 1
         self.proc.stdin.write(json.dumps({'jsonrpc':'2.0','id':self.sequence,
                                          'method':method,'params':params or {}})+'\n')
         self.proc.stdin.flush()
-        response = json.loads(self.lines.get(timeout=30))
+        deadline = time.monotonic() + 30
+        for _ in range(256):
+            try:
+                line = self.lines.get(timeout=max(0.001, deadline-time.monotonic()))
+            except queue.Empty:
+                raise AssertionError('No MCP response: '+ '\n'.join(self.diagnostics))
+            assert line is not None, 'MCP process exited: '+ '\n'.join(self.diagnostics)
+            response = json.loads(line)
+            assert response.get('jsonrpc') == '2.0', response
+            if 'id' not in response and isinstance(response.get('method'), str):
+                # Gateways may notify about tool-list changes or logging before
+                # replying. Keep only names, and preserve the request deadline.
+                self.notifications.append(response['method'])
+                del self.notifications[:-100]
+                continue
+            break
+        else:
+            raise AssertionError('Too many MCP notifications before the response')
         assert response['id'] == self.sequence, response
+        if method == 'initialize' and 'result' in response:
+            self.proc.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n')
+            self.proc.stdin.flush()
         return response
 
     def close(self):
-        self.proc.stdin.close()
+        try: self.proc.stdin.close()
+        except BrokenPipeError: pass
         try:
             self.proc.wait(timeout=15)
         except subprocess.TimeoutExpired:
