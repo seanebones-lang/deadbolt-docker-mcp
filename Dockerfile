@@ -4,7 +4,7 @@ ADD --checksum=sha256:a0befa90bba40f017d2a75e1644bbfcb38f4348d780cd3a2310341e23a
 RUN tar -xzf engine.tar.gz --strip-components=1 && rm engine.tar.gz
 RUN cargo build --locked --release --bin deadbolt
 
-FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+FROM node:22.23.4-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da
 LABEL org.opencontainers.image.title="DeadBolt MCP" \
       org.opencontainers.image.version="2.0.0" \
       org.opencontainers.image.licenses="Apache-2.0" \
