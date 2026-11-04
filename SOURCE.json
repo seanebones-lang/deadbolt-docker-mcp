@@ -1,15 +1,15 @@
 {
-  "engine_version": "2.0.0",
-  "engine_revision": "14804f2d512ce814a11de80daa8ca858b1dc7598",
-  "engine_archive_url": "https://codeload.github.com/seanebones-lang/deadbolt/tar.gz/14804f2d512ce814a11de80daa8ca858b1dc7598",
-  "engine_archive_sha256": "a0befa90bba40f017d2a75e1644bbfcb38f4348d780cd3a2310341e23adb1e9c",
+  "engine_version": "2.0.1",
+  "engine_revision": "e87519f700be03c27a564ed274907649224d256f",
+  "engine_archive_url": "https://codeload.github.com/seanebones-lang/deadbolt/tar.gz/e87519f700be03c27a564ed274907649224d256f",
+  "engine_archive_sha256": "25c68eebf145d1dda19e3bd8906a5c9712c593fce3089ee1880c8a5fe219fae7",
   "wrapper_origin": {
     "release": {
       "url": "https://github.com/seanebones-lang/deadbolt/releases/download/mcpb-v2.0.0/deadbolt-2.0.0.mcpb",
       "sha256": "50f9b7ac4c56f9a6cfa1c20e310b1a4970b373903edc0dd3faf4f5fb4173c977",
       "bundle_version": "2.0.0",
       "engine_version": "2.0.0",
-      "note": "Wrapper origin only: the container adapts the published stable launcher/setup and builds the exact stable engine source. It does not embed unchanged prebuilt MCPB executables."
+      "note": "Historical wrapper origin only: the container adapts the 2.0.0 launcher/setup and builds the separately pinned 2.0.1 engine source. It does not embed unchanged prebuilt MCPB executables."
     },
     "changes": [
       "Linux ARM64 target mapping",

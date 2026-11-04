@@ -8,11 +8,15 @@ operator configuration and a trusted downstream server, the same container gates
 that server's routed `tools/call` requests. It does not protect other MCP servers
 in your gateway, client built-in tools, or processes outside this container.
 
-This Docker package is the **2.0.0 stable source build**, built from the
-exact DeadBolt engine **2.0.0** source at
-`14804f2d512ce814a11de80daa8ca858b1dc7598`. The earlier Docker package 1.0.0
+This Docker source targets **2.0.1**, built from the
+exact released DeadBolt engine **2.0.1** source at
+`e87519f700be03c27a564ed274907649224d256f`. Container runtime qualification is
+separate from the engine's release; consult this revision's container CI before
+using it. Engine 2.0.1 fixes denied-call MCP spend accounting and requires fresh
+admission for every MCP tool invocation, including follow-up calls.
+The earlier Docker package 1.0.0
 remains available from its source revision
-`e5efc1595bc87683ccf96bc367448012a9e170ee`, with engine 1.0.3. This stable source build
+`e5efc1595bc87683ccf96bc367448012a9e170ee`, with engine 1.0.3. This source build
 requires version 2 operator configuration and a fresh run identity; it does not
 silently migrate an existing idle-only run.
 
@@ -31,9 +35,14 @@ the image/build stages; you do not install them on your host.
 ```sh
 git clone https://github.com/seanebones-lang/deadbolt-docker-mcp.git
 cd deadbolt-docker-mcp
-git checkout v2.0.0
+git checkout main
+git rev-parse HEAD
 docker build -t n11-deadbolt-docker:local .
 ```
+
+Review and pin that printed source revision for repeatable deployments. The
+historical Docker `v2.0.0` tag does not include the later Node runtime update or
+the 2.0.1 engine fixes; do not use it for a new installation.
 
 The build uses checksum-pinned engine source, locked Cargo dependencies and
 digest-pinned official base images. It builds natively for Linux ARM64 or AMD64.
@@ -159,8 +168,8 @@ For a supervised container, keep the renewal credential out of its environment
 and downstream process. Run the sidecar/heartbeat on the trusted operator side
 against the same private state. It needs its own explicitly configured private
 socket/credential mount; the networkless setup entry does not create that
-connection. Follow the [pinned supervisor guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0/docs/SUPERVISION.md)
-and use the stable 2.0.0 Python client/finite heartbeat helper. Start renewal before the
+connection. Follow the [pinned supervisor guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.1/docs/SUPERVISION.md)
+and use the matching 2.0.1 Python client/finite heartbeat helper. Start renewal before the
 idle TTL lapses. For simply trying the container, use the finite activity-mode
 example above.
 
@@ -168,7 +177,7 @@ The separate [container supervisor reference](examples/supervisor/README.md)
 uses the published stable Python helper, a private Linux socket and operator-only
 credential mounts. Its runnable lifecycle checks real heartbeat extension,
 busy-workload idle expiry, failed late renewal and the fixed deadline. It is
-part of this stable source-build route; it provisions operator supervision separately.
+part of this source-build route; it provisions operator supervision separately.
 
 ## Reproduce the effect checks
 
@@ -237,5 +246,5 @@ installation problems. Send private security concerns to
 **nextelevenstudios@gmail.com**; do not put secrets or private messages in issues.
 
 [Captioned walkthrough](https://www.nexteleven.dev/deadbolt#watch) ·
-[Engine source and trust guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.0/docs/TRUST.md) ·
+[Engine source and trust guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.1/docs/TRUST.md) ·
 [Other installation routes](https://www.nexteleven.dev/deadbolt#install)
