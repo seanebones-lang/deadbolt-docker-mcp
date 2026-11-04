@@ -6,6 +6,13 @@ locked engine dependency closure. This inventory includes components conditional
 on other supported targets and is broader than the exact linked set on one
 platform. Base-image components also retain their own licenses.
 
+The 2.0.1 inventory is copied byte-for-byte from the official
+`deadbolt-2.0.1-x86_64-unknown-linux-gnu.zip` release archive (SHA-256
+`c2340e58a74ac79d97644912d9bf03bf7f0cadd51b9cc0c802ec0a1fadf02856`).
+Its Cargo.lock matches the checksum-pinned engine source in `SOURCE.json`.
+The inventory's SHA-256 is
+`2e6e79ef9f3cf51f70ad10fa85d4c4a3eb193611386e6239ea5f1297ca764d3c`.
+
 The Docker build copies `third-party/` from the checksum-pinned engine source
 archive into `/opt/deadbolt/third-party/` in the runtime image. That directory
 includes the unmodified source and original MPL-2.0 license for `option-ext`
