@@ -4,9 +4,9 @@ FROM python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3
 COPY --from=engine /usr/local/bin/deadbolt /usr/local/bin/deadbolt
 COPY --from=engine /opt/deadbolt/LICENSE /opt/deadbolt/NOTICE /opt/deadbolt/THIRD-PARTY.md /opt/deadbolt/THIRD-PARTY-NOTICES.txt /opt/deadbolt/
 COPY --from=engine /opt/deadbolt/third-party /opt/deadbolt/third-party
-ADD --checksum=sha256:13e1eab6457ba62865864e007f14d6c3a84ca366f81cc6152e181a49d05a2a59 https://github.com/seanebones-lang/deadbolt/releases/download/v2.0.1/n11_deadbolt_client-2.0.1-py3-none-any.whl /tmp/n11_deadbolt_client-2.0.1-py3-none-any.whl
-RUN python -m pip install --no-cache-dir --no-deps /tmp/n11_deadbolt_client-2.0.1-py3-none-any.whl && \
-    rm /tmp/n11_deadbolt_client-2.0.1-py3-none-any.whl && \
+ADD --checksum=sha256:c9ff4722daabeebbfe78aaa07b4ce2c350ba13be1f250eded422f8c0b6d58c12 https://github.com/seanebones-lang/deadbolt/releases/download/v2.0.2/n11_deadbolt_client-2.0.2-py3-none-any.whl /tmp/n11_deadbolt_client-2.0.2-py3-none-any.whl
+RUN python -m pip install --no-cache-dir --no-deps /tmp/n11_deadbolt_client-2.0.2-py3-none-any.whl && \
+    rm /tmp/n11_deadbolt_client-2.0.2-py3-none-any.whl && \
     useradd --uid 10001 --create-home --shell /usr/sbin/nologin deadbolt
 COPY entry.py /opt/deadbolt-operator/entry.py
 USER 10001:10001

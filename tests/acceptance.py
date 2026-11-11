@@ -92,7 +92,7 @@ def verify(image):
     assert not info['Config'].get('ExposedPorts') and not info['Config'].get('Volumes')
     assert info['Config']['Entrypoint']==['node','/opt/deadbolt/server/entry.cjs']
     engine_version=run('docker','run','--rm','--network','none','--read-only','--entrypoint','/usr/local/bin/deadbolt',image,'--version').strip()
-    assert engine_version=='deadbolt 2.0.1'
+    assert engine_version=='deadbolt 2.0.2'
     passed('nonroot_stdio_image_with_no_declared_ports_or_host_mounts')
     base = ['docker','run','--rm','-i','--network','none','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges',
@@ -141,7 +141,7 @@ def verify(image):
                     assert data['route']==route and data['steps']
                 data=client.rpc('tools/call',{'name':'deadbolt_check_bundle','arguments':{}})['result']['structuredContent']
                 assert data['checksum_matches'] and data['active_protection'] is False
-                assert data['engine_version']=='2.0.1' and data['bundle_version']=='2.0.1'
+                assert data['engine_version']=='2.0.2' and data['bundle_version']=='2.0.2'
                 assert 'error' in client.rpc('tools/call',{'name':'kill','arguments':{}})
                 assert not list(state.iterdir())
                 client.close();passed('read_only_networkless_setup_'+label)

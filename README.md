@@ -8,11 +8,11 @@ operator configuration and a trusted downstream server, the same container gates
 that server's routed `tools/call` requests. It does not protect other MCP servers
 in your gateway, client built-in tools, or processes outside this container.
 
-This Docker source targets **2.0.1**, built from the
-exact released DeadBolt engine **2.0.1** source at
-`e87519f700be03c27a564ed274907649224d256f`. Container runtime qualification is
+This Docker source targets **2.0.2**, built from the
+exact released DeadBolt engine **2.0.2** source at
+`7d130e882d03b9ba82556fb072f646d4191bbe8a`. Container runtime qualification is
 separate from the engine's release; consult this revision's container CI before
-using it. Engine 2.0.1 fixes denied-call MCP spend accounting and requires fresh
+using it. Engine 2.0.2 fixes bundled SQLite for RUSTSEC-2026-0459 / CVE-2026-119375. It retains the earlier fix for denied-call MCP spend accounting and requires fresh
 admission for every MCP tool invocation, including follow-up calls.
 The earlier Docker package 1.0.0
 remains available from its source revision
@@ -42,7 +42,7 @@ docker build -t n11-deadbolt-docker:local .
 
 Review and pin that printed source revision for repeatable deployments. The
 historical Docker `v2.0.0` tag does not include the later Node runtime update or
-the 2.0.1 engine fixes; do not use it for a new installation.
+the 2.0.2 engine fixes; do not use it for a new installation.
 
 The build uses checksum-pinned engine source, locked Cargo dependencies and
 digest-pinned official base images. It builds natively for Linux ARM64 or AMD64.
@@ -168,8 +168,8 @@ For a supervised container, keep the renewal credential out of its environment
 and downstream process. Run the sidecar/heartbeat on the trusted operator side
 against the same private state. It needs its own explicitly configured private
 socket/credential mount; the networkless setup entry does not create that
-connection. Follow the [pinned supervisor guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.1/docs/SUPERVISION.md)
-and use the matching 2.0.1 Python client/finite heartbeat helper. Start renewal before the
+connection. Follow the [pinned supervisor guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.2/docs/SUPERVISION.md)
+and use the matching 2.0.2 Python client/finite heartbeat helper. Start renewal before the
 idle TTL lapses. For simply trying the container, use the finite activity-mode
 example above.
 
@@ -246,5 +246,5 @@ installation problems. Send private security concerns to
 **nextelevenstudios@gmail.com**; do not put secrets or private messages in issues.
 
 [Captioned walkthrough](https://www.nexteleven.dev/deadbolt#watch) ·
-[Engine source and trust guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.1/docs/TRUST.md) ·
+[Engine source and trust guide](https://github.com/seanebones-lang/deadbolt/blob/v2.0.2/docs/TRUST.md) ·
 [Other installation routes](https://www.nexteleven.dev/deadbolt#install)
