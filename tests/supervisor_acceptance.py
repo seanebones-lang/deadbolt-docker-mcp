@@ -30,9 +30,9 @@ def verify(image, operator_image):
         result = subprocess.run(['docker', 'logs', name], capture_output=True, text=True, timeout=10)
         assert result.returncode == 0
         return result.stdout + result.stderr
-    assert run(*(base + [operator_image, 'engine', '--version'])).strip() == 'deadbolt 2.0.1'
+    assert run(*(base + [operator_image, 'engine', '--version'])).strip() == 'deadbolt 2.0.2'
     assert run(*(base + ['--entrypoint', 'python', operator_image, '-c',
-        'import importlib.metadata; print(importlib.metadata.version("n11-deadbolt-client"))'])).strip() == '2.0.1'
+        'import importlib.metadata; print(importlib.metadata.version("n11-deadbolt-client"))'])).strip() == '2.0.2'
     source_hash = run(*(base + ['--entrypoint', 'node', image, '-e',
         'console.log(require("node:crypto").createHash("sha256").update(require("node:fs").readFileSync("/usr/local/bin/deadbolt")).digest("hex"))'])).strip()
     copied_hash = run(*(base + ['--entrypoint', 'python', operator_image, '-c',
@@ -246,8 +246,8 @@ def verify(image, operator_image):
             'architecture': json.loads(run('docker', 'image', 'inspect', image))[0]['Architecture'],
             'scope': 'NextEleven-operated real container heartbeat and MCP effects; no model or independent tester',
             'real_default_idle_ttl_secs': 60, 'operator_forced_expiry': False,
-            'engine_source': 'e87519f700be03c27a564ed274907649224d256f',
-            'python_client_version': '2.0.1',
+            'engine_source': '7d130e882d03b9ba82556fb072f646d4191bbe8a',
+            'python_client_version': '2.0.2',
             'python_wheel_sha256': '13e1eab6457ba62865864e007f14d6c3a84ca366f81cc6152e181a49d05a2a59',
             'checks': checks, 'effect_calls': calls, 'disposable_containers_volume_and_mounts_removed': True}
 

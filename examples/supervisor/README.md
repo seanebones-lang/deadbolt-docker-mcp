@@ -1,8 +1,8 @@
-# A trusted supervisor for the 2.0.1 source container
+# A trusted supervisor for the 2.0.2 source container
 
 Use this reference when the trusted job's continued participation, rather than
 calls from its workload, should keep a run live. It uses the published
-`2.0.1` Python heartbeat helper and the exact released 2.0.1 engine already built in the
+`2.0.2` Python heartbeat helper and the exact released 2.0.2 engine already built in the
 main image. Both the wheel checksum and official Python base-image digest are
 pinned. Build-time downloads are public; runtime connects no external service.
 
@@ -103,5 +103,5 @@ The downstream remains trusted: it shares writable gate state under the same
 user in this reference. Missing credential mounts do not make same-user state
 tamper-proof. Use an isolated executor/OS boundary when the workload itself is
 untrusted. No actual accounts, remote jobs or provider usage reconciliation are
-covered here. See the pinned [supervision contract](https://github.com/seanebones-lang/deadbolt/blob/v2.0.1/docs/SUPERVISION.md)
-and [trust limits](https://github.com/seanebones-lang/deadbolt/blob/v2.0.1/docs/TRUST.md).
+covered here. See the pinned [supervision contract](https://github.com/seanebones-lang/deadbolt/blob/v2.0.2/docs/SUPERVISION.md)
+and [trust limits](https://github.com/seanebones-lang/deadbolt/blob/v2.0.2/docs/TRUST.md).

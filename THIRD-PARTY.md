@@ -6,17 +6,17 @@ locked engine dependency closure. This inventory includes components conditional
 on other supported targets and is broader than the exact linked set on one
 platform. Base-image components also retain their own licenses.
 
-The 2.0.1 inventory is copied byte-for-byte from the official
-`deadbolt-2.0.1-x86_64-unknown-linux-gnu.zip` release archive (SHA-256
-`c2340e58a74ac79d97644912d9bf03bf7f0cadd51b9cc0c802ec0a1fadf02856`).
+The 2.0.2 inventory is copied byte-for-byte from the official
+`deadbolt-2.0.2-x86_64-unknown-linux-gnu.zip` release archive (SHA-256
+`c2e1e50fba85a5014f2c2ac9eafeceadc8c06ec2c24aef7f8b121ad836639d9f`).
 Its Cargo.lock matches the checksum-pinned engine source in `SOURCE.json`.
 The inventory's SHA-256 is
-`2e6e79ef9f3cf51f70ad10fa85d4c4a3eb193611386e6239ea5f1297ca764d3c`.
+`f7e7e8a2527f755b6b154d35e931e7cfff2c2f11de7f621a9ca431414c1d0fa7`.
 
 The Docker build copies `third-party/` from the checksum-pinned engine source
 archive into `/opt/deadbolt/third-party/` in the runtime image. That directory
 includes the unmodified source and original MPL-2.0 license for `option-ext`
-0.2.0 and the Rust 1.85.0 runtime license and copyright notices. The option-ext
+0.2.0 and the Rust 1.89.0 runtime license and copyright notices. The option-ext
 source is also available in the [exact upstream crate](https://crates.io/crates/option-ext/0.2.0).
 It is a source distribution for recipients, not a patched Cargo dependency.
 See [Mozilla's distribution FAQ](https://www.mozilla.org/en-US/MPL/2.0/FAQ/).
